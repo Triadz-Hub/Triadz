@@ -681,3 +681,10 @@ export const STORY = [
   "We started as a small team of passionate developers and designers who believed that great digital products are born at the intersection of technology and creativity. Over time, we expanded our capabilities to cover software development, website design, graphic design, photo and video editing, and 3D visualization.",
   "Today, we work with clients across India and beyond — from startups launching their first product to established businesses looking to elevate their digital presence. Every project we take on gets our full attention, dedication, and creative energy.",
 ];
+
+export const QUESTIONS = [
+  { question: "", answer: "" },
+  { question: "", answer: "" },
+  { question: "", answer: "" },
+  { question: "", answer: "" },
+];

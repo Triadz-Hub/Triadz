@@ -56,7 +56,9 @@ export default function ContactForm() {
     }
 
     if (file.size > MAX_FILE_SIZE_BYTES) {
-      setFileError("File size exceeds 10MB limit. Please select a smaller file.");
+      setFileError(
+        "File size exceeds 10MB limit. Please select a smaller file.",
+      );
       setSelectedFile(null);
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
@@ -207,7 +209,9 @@ export default function ContactForm() {
           <label className="text-sm font-medium text-text">
             Budget Range <span className="text-placeholder text-xs">(INR)</span>
           </label>
-          <span className="text-xs text-primary font-medium">{selectedBudget}</span>
+          <span className="text-xs text-primary font-medium">
+            {selectedBudget}
+          </span>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
           {BUDGET_OPTIONS.map((option) => {
@@ -279,9 +283,12 @@ export default function ContactForm() {
       <div className="flex flex-col gap-1.5">
         <label className="text-sm font-medium text-text flex items-center justify-between">
           <span>
-            Attachment <span className="text-placeholder text-xs">(optional)</span>
+            Attachment{" "}
+            <span className="text-placeholder text-xs">(optional)</span>
           </span>
-          <span className="text-xs text-placeholder">PDF, DOC, Images, ZIP (Max 10MB)</span>
+          <span className="text-xs text-placeholder">
+            PDF, DOC, Images, ZIP (Max 10MB)
+          </span>
         </label>
 
         {/* Hidden file input */}
@@ -393,7 +400,10 @@ export default function ContactForm() {
               </div>
               <div>
                 <div className="text-sm text-foreground">
-                  <span className="text-primary font-medium">Click to upload</span> or drag and drop
+                  <span className="text-primary font-medium">
+                    Click to upload
+                  </span>{" "}
+                  or drag and drop
                 </div>
                 <div className="text-xs text-placeholder">
                   Share wireframes, brief document, or project specifications
@@ -403,11 +413,11 @@ export default function ContactForm() {
           )}
         </div>
 
-        {fileError && (
-          <p className="text-xs text-red mt-0.5">{fileError}</p>
-        )}
+        {fileError && <p className="text-xs text-red mt-0.5">{fileError}</p>}
         {state.errors?.attachment && (
-          <p className="text-xs text-red mt-0.5">{state.errors.attachment[0]}</p>
+          <p className="text-xs text-red mt-0.5">
+            {state.errors.attachment[0]}
+          </p>
         )}
       </div>
 

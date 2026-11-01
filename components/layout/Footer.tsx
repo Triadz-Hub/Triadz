@@ -5,10 +5,10 @@ import { CONTACT_INFO, PAGES, SERVICES, SOCIAL_MEDIA } from "@/lib/data";
 
 export default function Footer() {
   return (
-    <footer className="px-6 lg:px-20 xl:px-80 py-4 mt-16">
-      <div className="grid grid-cols-4 mb-4 gap-8">
+    <footer className="px-4 sm:px-6 md:px-10 lg:px-16 xl:px-24 max-w-7xl mx-auto py-8 sm:py-12 mt-12 sm:mt-16">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 mb-8 sm:mb-12 gap-8 sm:gap-10">
         <div className="">
-          <div className="flex items-center mb-8">
+          <div className="flex items-center mb-6 sm:mb-8">
             <Link href={PAGES.HOME.href}>
               <Image
                 src="/logo.png"
@@ -20,7 +20,7 @@ export default function Footer() {
             <div className="text-primary text-3xl font-black ml-2">Triadz</div>
           </div>
 
-          <div className="text-text text-sm mb-8">
+          <div className="text-text text-sm mb-6 sm:mb-8 leading-relaxed">
             Your Ideas. Our Creativity. Powerful Digital Solutions.
           </div>
 
@@ -49,7 +49,7 @@ export default function Footer() {
           {Object.values(PAGES).map((item, index) => {
             return (
               <Link href={item.href} key={index}>
-                <div className="text-text text-base mb-4 hover:text-secondary hover:text-shadow-sm hover:text-shadow-secondary/10">
+                <div className="text-text text-base mb-3 hover:text-secondary hover:text-shadow-sm hover:text-shadow-secondary/10 transition-colors">
                   {item.label}
                 </div>
               </Link>
@@ -64,7 +64,7 @@ export default function Footer() {
           {Object.values(SERVICES).map((item, index) => {
             return (
               <Link href={item.href} key={index}>
-                <div className="text-text text-base mb-4 hover:text-secondary hover:text-shadow-sm hover:text-shadow-secondary/10">
+                <div className="text-text text-base mb-3 hover:text-secondary hover:text-shadow-sm hover:text-shadow-secondary/10 transition-colors">
                   {item.label}
                 </div>
               </Link>
@@ -80,9 +80,9 @@ export default function Footer() {
             const { Icon } = item;
             return (
               <Link href={item.href} key={index} target="_blank">
-                <div className="flex items-center gap-2 text-text text-base mb-4 hover:text-secondary hover:text-shadow-sm hover:text-shadow-secondary/10">
-                  <span className="text-primary">{<Icon size={20} />}</span>
-                  {item.label}
+                <div className="flex items-center gap-2.5 text-text text-base mb-3 hover:text-secondary hover:text-shadow-sm hover:text-shadow-secondary/10 transition-colors">
+                  <span className="text-primary shrink-0">{<Icon size={18} />}</span>
+                  <span className="break-all">{item.label}</span>
                 </div>
               </Link>
             );
@@ -90,18 +90,21 @@ export default function Footer() {
         </div>
       </div>
 
-      <div className="container flex items-center justify-between border-t border-text/10 pt-4">
-        <p className="text-sm font-medium text-muted-foreground">
+      <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-text/10 pt-6 text-center sm:text-left">
+        <p className="text-sm font-medium text-text">
           © <Now formate="YYYY" /> Triadz. All rights reserved.
         </p>
-        <p className="text-sm font-medium text-muted-foreground">
+        <p className="text-sm font-medium text-text flex items-center gap-4">
           <Link
             href="/privacypolicy"
-            className="font-semibold hover:underline mr-4"
+            className="hover:underline hover:text-primary transition-colors"
           >
             Privacy Policy
           </Link>
-          <Link href="/terms" className="font-semibold hover:underline ml-4">
+          <Link
+            href="/terms"
+            className="hover:underline hover:text-primary transition-colors"
+          >
             Terms of Service
           </Link>
         </p>
