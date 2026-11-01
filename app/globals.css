@@ -1,26 +1,111 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #0a0e14;
+  --foreground: #dfe2eb;
+  --primary: #ffb500;
+  --secondary: #ffd99d;
+  --card: #1c2026;
+  --chip: #262a31;
+  --text: #bdc7d9;
+  --placeholder: #9e8e78;
+  --cyan: #00c5ff;
+  --purple: #a855f7;
+  --pink: #ec4899;
+  --blue: #3b82f6;
+  --red: #ef4444;
+  --yellow: #eab308;
+  --green: #22c55e;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-primary: var(--primary);
+  --color-secondary: var(--secondary);
+  --color-card: var(--card);
+  --color-chip: var(--chip);
+  --color-text: var(--text);
+  --color-placeholder: var(--placeholder);
+  --color-cyan: var(--cyan);
+  --color-purple: var(--purple);
+  --color-pink: var(--pink);
+  --color-blue: var(--blue);
+  --color-red: var(--red);
+  --color-yellow: var(--yellow);
+  --color-green: var(--green);
+  --font-sans: var(--font-sans), sans-serif;
+  --font-mono: monospace;
+
+  --animate-bounce-smooth: bounce-smooth 4s ease-in-out infinite;
+
+  @keyframes bounce-smooth {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+
+    50% {
+      transform: translateY(-16px);
+    }
+  }
+
+  --animate-bounce-slow: bounce-slow 6s ease-in-out infinite;
+
+  @keyframes bounce-slow {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+
+    50% {
+      transform: translateY(-16px);
+    }
+  }
+
+  --animate-bounce-rotate: bounce-rotate 6s ease-in-out infinite;
+
+  @keyframes bounce-rotate {
+    0%,
+    100% {
+      transform: translateY(0) rotate(0deg);
+    }
+
+    50% {
+      transform: translateY(-16px) rotate(15deg);
+    }
+  }
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #0a0e14;
+    --foreground: #dfe2eb;
+    --primary: #ffb500;
+    --secondary: #ffd99d;
+    --card: #1c2026;
+    --chip: #262a31;
+    --text: #bdc7d9;
+    --placeholder: #9e8e78;
+    --cyan: #00c5ff;
+    --purple: #a855f7;
+    --pink: #ec4899;
+    --blue: #3b82f6;
+    --red: #ef4444;
+    --yellow: #eab308;
+    --green: #22c55e;
   }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), sans-serif;
+  transition: all 1s ease-in-out;
+  overflow-x: hidden;
+}
+
+body::selection {
+  background-color: var(--primary);
+  color: var(--background);
 }

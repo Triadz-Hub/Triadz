@@ -1,0 +1,19 @@
+import { IconProps } from "@/lib/types";
+
+export default function CommunicationIcon({ size = 24 }: IconProps) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={size}
+      height={size}
+      viewBox="0 0 512 512"
+    >
+      <path
+        fill="currentColor"
+        fillRule="evenodd"
+        d="M42.667 64h298.666v64h-42.666v-21.333H85.333V256H128v42.667l21.333-16V336l-64 48v-85.333H42.667zm128 85.333h298.666V384h-42.666v85.333L312.889 384H170.667zm213.333 192h42.667V192H213.333v149.333h113.778L384 384z"
+        clipRule="evenodd"
+      />
+    </svg>
+  );
+}
