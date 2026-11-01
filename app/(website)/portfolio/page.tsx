@@ -59,8 +59,8 @@ export default function PortfolioPage() {
         {Object.values(WORKS).map((item, index) => {
           return (
             <div
-              className="border border-text/70 rounded-lg overflow-hidden"
-              key={index}
+              className="border border-text/70 rounded-lg overflow-hidden flex flex-col"
+              key={index.toString()}
             >
               <div className="overflow-hidden">
                 <Image
@@ -71,12 +71,27 @@ export default function PortfolioPage() {
                   className="w-full h-full object-cover transition-transform duration-300 hover:scale-110"
                 />
               </div>
-              <div className="bg-card/70 backdrop-blur-sm p-3">
+              <div className="bg-card/70 backdrop-blur-sm p-3 flex-1">
                 <div className="px-2 py-1 text-xs font-semibold text-secondary bg-primary/70 w-fit rounded-full mb-2">
                   {item.category}
                 </div>
                 <div className="text-base text-foreground font-semibold">
                   {item.label}
+                </div>
+                <div className="text-sm text-text line-clamp-2">
+                  {item.description}
+                </div>
+                <div className="flex items-center flex-wrap mt-2 gap-1">
+                  {item.technologies.split(",").map((tech, inx) => {
+                    return (
+                      <div
+                        className="text-xs text-text py-1 px-2 rounded-full border-text/70 bg-background"
+                        key={inx.toString()}
+                      >
+                        {tech}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>
