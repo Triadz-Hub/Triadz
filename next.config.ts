@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: "export",
+  /* output: "export" removed to allow Server Actions and dynamic SSR */
   images: {
     unoptimized: true,
   },
