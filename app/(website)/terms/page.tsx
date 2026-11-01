@@ -2,7 +2,7 @@
 
 import Divider from "@/components/layout/Divider";
 import { MailIcon, RightArrowIcon } from "@/components/icons";
-import { CONTACT_DETAILS } from "@/lib/data";
+import { CONTACT_DETAILS, PAGES } from "@/lib/data";
 import { motion, type Variants } from "motion/react";
 import Link from "next/link";
 import { useState } from "react";
@@ -472,7 +472,7 @@ export default function TermsAndConditionsPage() {
           </motion.p>
           <motion.div variants={fadeInUp}>
             <Link
-              href="/contact"
+              href={PAGES.CONTACT.href}
               className="inline-flex items-center gap-2 text-sm sm:text-base font-semibold text-background bg-primary rounded-lg px-6 py-3 cursor-pointer hover:shadow-lg hover:shadow-primary/20 transition-all duration-300"
             >
               <span>Get in Touch</span>
