@@ -236,6 +236,14 @@ async function processAndSendEmail(
       };
     }
 
+    if (errorMessage.includes("EACCES")) {
+      return {
+        success: false,
+        message:
+          "Email server connection was blocked by local socket permissions (EACCES). Please ensure port 587 (STARTTLS) is configured in .env.local.",
+      };
+    }
+
     return {
       success: false,
       message: `Failed to send email: ${errorMessage}`,

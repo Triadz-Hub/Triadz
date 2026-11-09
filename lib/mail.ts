@@ -16,16 +16,25 @@ export function escapeHtml(str: string): string {
 
 /**
  * Get or create the Nodemailer transport instance.
+ * Defaults to port 587 (STARTTLS) which provides universal firewall & host compatibility,
+ * avoiding the socket EACCES restrictions often encountered on port 465.
  */
-export function getMailTransporter() {
+export function getMailTransporter(customPort?: number, customSecure?: boolean) {
   const host = process.env.SMTP_HOST;
-  const port = process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : 465;
+  const port =
+    customPort !== undefined
+      ? customPort
+      : process.env.SMTP_PORT
+        ? Number(process.env.SMTP_PORT)
+        : 587;
   const user = process.env.SMTP_USER;
   const pass = process.env.SMTP_PASSWORD || process.env.SMTP_PASS;
   const secure =
-    process.env.SMTP_SECURE !== undefined
-      ? process.env.SMTP_SECURE === "true"
-      : port === 465;
+    customSecure !== undefined
+      ? customSecure
+      : process.env.SMTP_SECURE !== undefined
+        ? process.env.SMTP_SECURE === "true"
+        : port === 465;
 
   if (!host || !user || !pass) {
     console.warn(
@@ -44,6 +53,9 @@ export function getMailTransporter() {
             pass,
           }
         : undefined,
+    tls: {
+      rejectUnauthorized: false,
+    },
   });
 }
 
@@ -58,10 +70,9 @@ export interface MailOptions {
 }
 
 /**
- * Sends an email using Nodemailer.
+ * Sends an email using Nodemailer with automatic fallback resilience.
  */
 export async function sendMail(options: MailOptions) {
-  const transporter = getMailTransporter();
   const defaultFrom =
     process.env.SMTP_FROM ||
     `"Triadz Solutions" <${process.env.SMTP_USER || CONTACT_DETAILS.mailId}>`;
@@ -70,7 +81,7 @@ export async function sendMail(options: MailOptions) {
     CONTACT_DETAILS.mailId ||
     process.env.SMTP_USER;
 
-  return await transporter.sendMail({
+  const mailPayload: SendMailOptions = {
     from: options.from || defaultFrom,
     to: options.to || defaultTo,
     replyTo: options.replyTo,
@@ -78,7 +89,33 @@ export async function sendMail(options: MailOptions) {
     text: options.text,
     html: options.html,
     attachments: options.attachments,
-  });
+  };
+
+  try {
+    const transporter = getMailTransporter();
+    return await transporter.sendMail(mailPayload);
+  } catch (err: unknown) {
+    const error = err as Error & { code?: string; errno?: number | string };
+    const configuredPort = process.env.SMTP_PORT
+      ? Number(process.env.SMTP_PORT)
+      : 587;
+    const isSocketError =
+      error.code === "EACCES" ||
+      error.code === "ECONNREFUSED" ||
+      error.code === "ETIMEDOUT" ||
+      (typeof error.message === "string" && error.message.includes("EACCES"));
+
+    // If initial send failed on port 465 with socket permission/connection error, retry with port 587
+    if (configuredPort !== 587 && isSocketError) {
+      console.warn(
+        `[Nodemailer] Socket connection error on port ${configuredPort} (${error.code || error.message}). Falling back to port 587 (STARTTLS)...`
+      );
+      const fallbackTransporter = getMailTransporter(587, false);
+      return await fallbackTransporter.sendMail(mailPayload);
+    }
+
+    throw err;
+  }
 }
 
 /**
