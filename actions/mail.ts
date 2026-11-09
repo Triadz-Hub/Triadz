@@ -5,7 +5,11 @@ import {
   generateContactEmailTemplate,
   sendMail,
 } from "@/lib/mail";
-import { EmailAttachment, MailActionResult, SendEmailPayload } from "@/lib/types";
+import {
+  EmailAttachment,
+  MailActionResult,
+  SendEmailPayload,
+} from "@/lib/types";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
@@ -240,7 +244,15 @@ async function processAndSendEmail(
       return {
         success: false,
         message:
-          "Email server connection was blocked by local socket permissions (EACCES). Please ensure port 587 (STARTTLS) is configured in .env.local.",
+          "Email server connection was blocked by local socket permissions (EACCES). Please ensure port 587 (STARTTLS) is configured in your production environment variables (SMTP_PORT=587, SMTP_SECURE=false).",
+      };
+    }
+
+    if (errorMessage.toLowerCase().includes("restricted")) {
+      return {
+        success: false,
+        message:
+          "The email account has been temporarily restricted by GoDaddy security. Please log into your GoDaddy dashboard (Email & Office) to unrestrict the mailbox.",
       };
     }
 

@@ -38,7 +38,7 @@ export function getMailTransporter(customPort?: number, customSecure?: boolean) 
 
   if (!host || !user || !pass) {
     console.warn(
-      "[Nodemailer] Warning: SMTP configuration is incomplete. Please set SMTP_HOST, SMTP_USER, and SMTP_PASSWORD in .env.local"
+      "[Nodemailer] Warning: SMTP configuration is incomplete. Please set SMTP_HOST, SMTP_USER, and SMTP_PASSWORD in .env.local",
     );
   }
 
@@ -125,9 +125,13 @@ export function generateContactEmailTemplate(data: SendEmailPayload) {
   const safeName = escapeHtml(data.name);
   const safeEmail = escapeHtml(data.email);
   const safePhone = data.phone ? escapeHtml(data.phone) : "Not provided";
-  const safeService = data.service ? escapeHtml(data.service) : "General Inquiry";
+  const safeService = data.service
+    ? escapeHtml(data.service)
+    : "General Inquiry";
   const safeBudget = data.budget ? escapeHtml(data.budget) : "Not specified";
-  const safeSubject = data.subject ? escapeHtml(data.subject) : `New inquiry from ${safeName}`;
+  const safeSubject = data.subject
+    ? escapeHtml(data.subject)
+    : `New inquiry from ${safeName}`;
   const safeMessage = escapeHtml(data.message).replace(/\n/g, "<br/>");
 
   const attachmentsList =
