@@ -4,6 +4,7 @@ import {
   generateAutoReplyTemplate,
   generateContactEmailTemplate,
   sendMail,
+  SmtpConfigurationError,
 } from "@/lib/mail";
 import {
   EmailAttachment,
@@ -42,8 +43,20 @@ function validatePayload(data: Partial<SendEmailPayload>): {
 
   if (!email) {
     errors.email = ["Email address is required."];
-  } else if (!EMAIL_REGEX.test(email)) {
+  } else if (email.length > 254 || !EMAIL_REGEX.test(email)) {
     errors.email = ["Please provide a valid email address."];
+  }
+
+  if (subject.length > 150) {
+    errors.subject = ["Subject cannot exceed 150 characters."];
+  }
+
+  if (service.length > 100) {
+    errors.service = ["Please select a valid service."];
+  }
+
+  if (budget.length > 60) {
+    errors.budget = ["Please select a valid budget range."];
   }
 
   if (!message) {
@@ -56,6 +69,10 @@ function validatePayload(data: Partial<SendEmailPayload>): {
 
   if (phone && phone.length > 30) {
     errors.phone = ["Phone number is too long."];
+  }
+
+  if (subject.includes("\\r") || subject.includes("\\n")) {
+    errors.subject = ["Subject contains invalid characters."];
   }
 
   return {
@@ -95,6 +112,7 @@ export async function sendContactEmailAction(
     return {
       success: false,
       message: "No form data was received.",
+      statusCode: 400,
     };
   }
 
@@ -117,6 +135,7 @@ export async function sendContactEmailAction(
         return {
           success: false,
           message: `Attachment "${file.name}" exceeds the 10MB size limit.`,
+          statusCode: 413,
           errors: {
             attachment: ["File size cannot exceed 10MB."],
           },
@@ -135,7 +154,8 @@ export async function sendContactEmailAction(
         console.error("Error reading attachment:", fileErr);
         return {
           success: false,
-          message: `Could not read attachment "${file.name}".`,
+          message: "The attachment could not be processed. Please try again.",
+          statusCode: 400,
           errors: {
             attachment: ["Error reading file attachment."],
           },
@@ -179,6 +199,7 @@ async function processAndSendEmail(
     return {
       success: false,
       message: "Please fix the validation errors below.",
+      statusCode: 422,
       errors,
     };
   }
@@ -222,45 +243,50 @@ async function processAndSendEmail(
         "Thank you! Your message has been sent successfully. We will get back to you shortly.",
     };
   } catch (error: unknown) {
-    console.error("[Nodemailer] Error sending email:", error);
+    const smtpError = error as Error & {
+      code?: string;
+      responseCode?: number;
+    };
 
-    const errorMessage =
-      error instanceof Error ? error.message : "An unexpected error occurred.";
+    // Keep provider diagnostics in server logs only. Never return SMTP details,
+    // credentials, or provider responses to the public contact form.
+    console.error("[Nodemailer] Contact email delivery failed:", {
+      name: smtpError.name,
+      code: smtpError.code,
+      responseCode: smtpError.responseCode,
+      message: smtpError.message,
+    });
 
-    // If SMTP credentials are not yet configured, provide a helpful note
-    if (!process.env.SMTP_USER || !process.env.SMTP_PASSWORD) {
+    if (error instanceof SmtpConfigurationError) {
       return {
         success: false,
+        statusCode: 503,
         message:
-          "Email configuration is missing on the server. Please configure SMTP_USER (triadzsolutions@gmail.com) and SMTP_PASSWORD in .env.local.",
+          "The contact service is temporarily unavailable. Please email sales@triadz.in directly.",
       };
     }
 
-    // Gmail authentication error (usually regular password used instead of 16-character Google App Password)
-    if (
-      errorMessage.includes("Username and Password not accepted") ||
-      errorMessage.includes("535-5.7.8") ||
-      errorMessage.includes("BadCredentials") ||
-      errorMessage.includes("InvalidSecondFactorResponse")
-    ) {
-      return {
-        success: false,
-        message:
-          "Gmail authentication failed. For triadzsolutions@gmail.com, you must use a 16-character Google App Password (not your regular Gmail password). Generate one at https://myaccount.google.com/apppasswords.",
-      };
-    }
+    const isAuthenticationError =
+      smtpError.code === "EAUTH" ||
+      smtpError.responseCode === 535 ||
+      /BadCredentials|Username and Password not accepted|InvalidSecondFactor/i.test(
+        smtpError.message || "",
+      );
 
-    if (errorMessage.includes("EACCES")) {
+    if (isAuthenticationError) {
       return {
         success: false,
+        statusCode: 502,
         message:
-          "Email server connection was blocked by local socket permissions (EACCES). Please ensure port 587 (SMTP_PORT=587, SMTP_SECURE=false) is configured.",
+          "Email delivery is currently unavailable because the email provider rejected authentication. Please try again later or email sales@triadz.in directly.",
       };
     }
 
     return {
       success: false,
-      message: `Failed to send email: ${errorMessage}`,
+      statusCode: 502,
+      message:
+        "We could not deliver your message right now. Please try again later or email sales@triadz.in directly.",
     };
   }
 }
