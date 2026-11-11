@@ -37,8 +37,8 @@ export function getMailTransporter() {
   const host = process.env.SMTP_HOST?.trim() || "smtp.gmail.com";
   const user = process.env.SMTP_USER?.trim();
   const pass =
-    process.env.SMTP_PASSWORD?.replace(/\\s+/g, "").trim() ||
-    process.env.SMTP_PASS?.replace(/\\s+/g, "").trim();
+    process.env.SMTP_PASSWORD?.replace(/\s+/g, "").trim() ||
+    process.env.SMTP_PASS?.replace(/\s+/g, "").trim();
 
   const rawPort = process.env.SMTP_PORT?.trim();
   const port = rawPort ? Number(rawPort) : 587;
@@ -142,7 +142,7 @@ export function generateContactEmailTemplate(data: SendEmailPayload) {
   const safeBudget = data.budget ? escapeHtml(data.budget) : "Not specified";
   const subjectText = (
     data.subject || `New inquiry from ${data.name}`
-  ).replace(/[\\r\\n]+/g, " ").trim();
+  ).replace(/[\r\n]+/g, " ").trim();
   const safeSubject = escapeHtml(subjectText);
   const safeMessage = escapeHtml(data.message).replace(/\n/g, "<br/>");
 
