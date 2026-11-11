@@ -34,7 +34,7 @@ Fill in the Gmail app password in `.env.local` before testing email delivery. Ne
    - `SMTP_PASSWORD=<Google App Password>`
    - `SMTP_FROM=Triadz Solutions <triadzsolutions@gmail.com>`
    - `CONTACT_RECEIVER_EMAIL=sales@triadz.in`
-5. Create GitHub Actions repository secrets `GODADDY_PAT` and `GODADDY_APP_ID` to enable automatic source import and publish from the workflow. The GoDaddy Personal Access Token needs `hosting.source:write` and `hosting.deployment:execute` scopes.
+5. Create GitHub Actions repository secrets `GODADDY_PAT` and `GODADDY_APP_ID` to enable automatic source import and publish from the workflow. The GoDaddy Personal Access Token needs `hosting.source:write`, `hosting.source:read`, `hosting.application:read`, and `hosting.deployment:execute` scopes for this existing-app import/publish workflow.
 6. The GoDaddy workflow runs a production build on every push to `main`. When the two GoDaddy secrets are set, it uploads the app source and publishes the connected GoDaddy app.
 
 GoDaddy's Node.js Hosting requires an eligible Web Hosting plan attached to the app before it can be published. The platform builds the uploaded source, so the deployment ZIP must include the application source and `package.json` at its root, but must not include `node_modules` or secret environment files.
