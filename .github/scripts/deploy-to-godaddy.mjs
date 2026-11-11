@@ -142,10 +142,8 @@ async function main() {
     {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
         "Idempotency-Key": idempotencyKey("publish"),
       },
-      body: JSON.stringify({}),
     },
   );
 
