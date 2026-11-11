@@ -1,10 +1,19 @@
 import { readFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
 
 const pat = process.env.GODADDY_PAT;
 const appId = process.env.GODADDY_APP_ID;
 const archivePath = process.env.GODADDY_SOURCE_ZIP || "godaddy-source.zip";
 const apiBase = "https://api.godaddy.com/v1/hosting";
 const commitSha = process.env.GITHUB_SHA || "manual-deploy";
+
+function idempotencyKey(operation) {
+  const hex = createHash("sha256")
+    .update(`${commitSha}:${operation}`)
+    .digest("hex");
+  const variant = ((Number.parseInt(hex[16], 16) & 0x3) | 0x8).toString(16);
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-4${hex.slice(13, 16)}-${variant}${hex.slice(17, 20)}-${hex.slice(20, 32)}`;
+}
 const maxWaitMs = 5 * 60 * 1000;
 const pollEveryMs = 4000;
 
@@ -107,7 +116,7 @@ async function main() {
     `/apps/${encodeURIComponent(appId)}/imports`,
     {
       method: "POST",
-      headers: { "Idempotency-Key": `${commitSha}-source-import` },
+      headers: { "Idempotency-Key": idempotencyKey("source-import") },
       body: form,
     },
   );
@@ -134,7 +143,7 @@ async function main() {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Idempotency-Key": `${commitSha}-publish`,
+        "Idempotency-Key": idempotencyKey("publish"),
       },
       body: JSON.stringify({}),
     },
