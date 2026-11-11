@@ -50,7 +50,7 @@ export function getMailTransporter() {
     );
   }
 
-  if (!host || !Number.isInteger(port) || ![465, 587].includes(port)) {
+  if (host.toLowerCase() !== "smtp.gmail.com" || !Number.isInteger(port) || ![465, 587].includes(port)) {
     throw new SmtpConfigurationError(
       "Gmail SMTP requires SMTP_HOST=smtp.gmail.com and SMTP_PORT=465 or 587.",
     );
