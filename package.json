@@ -28,11 +28,11 @@
     "tailwindcss": "^4.3.5",
     "three": "^0.186.1",
     "three-stdlib": "^2.36.1",
-    "typescript": "^5"
+    "typescript": "^5",
+    "@types/nodemailer": "^8.0.2"
   },
   "devDependencies": {
     "@tailwindcss/turbopack": "^4",
-    "@types/nodemailer": "^8.0.2",
     "eslint": "^9",
     "eslint-config-next": "16.4.3"
   }
