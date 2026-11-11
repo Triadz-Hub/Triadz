@@ -46,5 +46,7 @@ export interface SendEmailPayload {
 export interface MailActionResult {
   success: boolean;
   message: string;
+  /** HTTP status to return from the contact API when success is false. */
+  statusCode?: number;
   errors?: Record<string, string[]>;
 }
