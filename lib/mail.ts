@@ -15,44 +15,57 @@ export function escapeHtml(str: string): string {
 }
 
 /**
- * Get or create the Nodemailer transport instance.
- * Supports Gmail (triadzsolutions@gmail.com) via service or smtp.gmail.com,
- * as well as custom SMTP hosts.
+ * Raised when the deployment is missing or has invalid SMTP environment values.
  */
-export function getMailTransporter(
-  customPort?: number,
-  customSecure?: boolean,
-) {
-  const host = process.env.SMTP_HOST || "smtp.gmail.com";
-  const user = process.env.SMTP_USER || "triadzsolutions@gmail.com";
-  const pass = process.env.SMTP_PASSWORD || process.env.SMTP_PASS;
+export class SmtpConfigurationError extends Error {
+  readonly code = "SMTP_CONFIG_ERROR";
 
-  const isGmail =
-    process.env.SMTP_SERVICE === "gmail" ||
-    host.includes("gmail") ||
-    user?.endsWith("@gmail.com");
+  constructor(message = "SMTP configuration is incomplete or invalid.") {
+    super(message);
+    this.name = "SmtpConfigurationError";
+  }
+}
 
-  // For Gmail, port 587 (STARTTLS) or 465 (SSL) can be used.
-  // Port 587 is the universal default to avoid host socket EACCES restrictions on port 465.
-  const port =
-    customPort !== undefined
-      ? customPort
-      : process.env.SMTP_PORT
-        ? Number(process.env.SMTP_PORT)
-        : isGmail
-          ? 587
-          : 587;
+/**
+ * Creates a Gmail SMTP transport.
+ *
+ * Port 587 uses STARTTLS. Port 465 uses implicit TLS.
+ * SMTP_PASSWORD is the preferred secret name; SMTP_PASS remains supported
+ * temporarily for backwards compatibility with existing deployments.
+ */
+export function getMailTransporter() {
+  const host = process.env.SMTP_HOST?.trim() || "smtp.gmail.com";
+  const user = process.env.SMTP_USER?.trim();
+  const pass =
+    process.env.SMTP_PASSWORD?.replace(/\s+/g, "").trim() ||
+    process.env.SMTP_PASS?.replace(/\s+/g, "").trim();
 
-  const secure =
-    customSecure !== undefined
-      ? customSecure
-      : process.env.SMTP_SECURE !== undefined
-        ? process.env.SMTP_SECURE === "true"
-        : port === 465;
+  const rawPort = process.env.SMTP_PORT?.trim();
+  const port = rawPort ? Number(rawPort) : 587;
+  const rawSecure = process.env.SMTP_SECURE?.trim().toLowerCase();
 
   if (!user || !pass) {
-    console.warn(
-      "[Nodemailer] Warning: SMTP configuration is incomplete. Please set SMTP_USER and SMTP_PASSWORD in .env.local",
+    throw new SmtpConfigurationError(
+      "Set SMTP_USER and SMTP_PASSWORD in the GoDaddy production environment.",
+    );
+  }
+
+  if (host.toLowerCase() !== "smtp.gmail.com" || !Number.isInteger(port) || ![465, 587].includes(port)) {
+    throw new SmtpConfigurationError(
+      "Gmail SMTP requires SMTP_HOST=smtp.gmail.com and SMTP_PORT=465 or 587.",
+    );
+  }
+
+  if (rawSecure && rawSecure !== "true" && rawSecure !== "false") {
+    throw new SmtpConfigurationError(
+      "SMTP_SECURE must be either true or false.",
+    );
+  }
+
+  const secure = rawSecure ? rawSecure === "true" : port === 465;
+  if ((port === 465 && !secure) || (port === 587 && secure)) {
+    throw new SmtpConfigurationError(
+      "Use SMTP_SECURE=true with port 465, or SMTP_SECURE=false with port 587.",
     );
   }
 
@@ -60,13 +73,14 @@ export function getMailTransporter(
     host,
     port,
     secure,
-    auth:
-      user && pass
-        ? {
-            user,
-            pass,
-          }
-        : undefined,
+    requireTLS: port === 587,
+    auth: { user, pass },
+    connectionTimeout: 15_000,
+    greetingTimeout: 15_000,
+    socketTimeout: 30_000,
+    tls: {
+      minVersion: "TLSv1.2",
+    },
   });
 }
 
@@ -81,17 +95,21 @@ export interface MailOptions {
 }
 
 /**
- * Sends an email using Nodemailer with automatic fallback resilience.
+ * Sends one email and closes its SMTP connection after the attempt.
  */
 export async function sendMail(options: MailOptions) {
+  const smtpUser = process.env.SMTP_USER?.trim();
   const defaultFrom =
-    process.env.SMTP_FROM ||
-    `"Triadz Solutions" <${process.env.SMTP_USER || "triadzsolutions@gmail.com"}>`;
+    process.env.SMTP_FROM?.trim() ||
+    (smtpUser ? `"Triadz Solutions" <${smtpUser}>` : undefined);
   const defaultTo =
-    process.env.CONTACT_RECEIVER_EMAIL ||
-    process.env.SMTP_USER ||
-    CONTACT_DETAILS.mailId ||
-    "triadzsolutions@gmail.com";
+    process.env.CONTACT_RECEIVER_EMAIL?.trim() || CONTACT_DETAILS.mailId;
+
+  if (!defaultFrom || !defaultTo) {
+    throw new SmtpConfigurationError(
+      "Set SMTP_USER, SMTP_PASSWORD, and CONTACT_RECEIVER_EMAIL.",
+    );
+  }
 
   const mailPayload: SendMailOptions = {
     from: options.from || defaultFrom,
@@ -103,30 +121,11 @@ export async function sendMail(options: MailOptions) {
     attachments: options.attachments,
   };
 
+  const transporter = getMailTransporter();
   try {
-    const transporter = getMailTransporter();
     return await transporter.sendMail(mailPayload);
-  } catch (err: unknown) {
-    const error = err as Error & { code?: string; errno?: number | string };
-    const configuredPort = process.env.SMTP_PORT
-      ? Number(process.env.SMTP_PORT)
-      : 587;
-    const isSocketError =
-      error.code === "EACCES" ||
-      error.code === "ECONNREFUSED" ||
-      error.code === "ETIMEDOUT" ||
-      (typeof error.message === "string" && error.message.includes("EACCES"));
-
-    // If initial send failed on port 465 with socket permission/connection error, retry with port 587
-    if (configuredPort !== 587 && isSocketError) {
-      console.warn(
-        `[Nodemailer] Socket connection error on port ${configuredPort} (${error.code || error.message}). Falling back to port 587 (STARTTLS)...`,
-      );
-      const fallbackTransporter = getMailTransporter(587, false);
-      return await fallbackTransporter.sendMail(mailPayload);
-    }
-
-    throw err;
+  } finally {
+    transporter.close();
   }
 }
 
@@ -141,9 +140,10 @@ export function generateContactEmailTemplate(data: SendEmailPayload) {
     ? escapeHtml(data.service)
     : "General Inquiry";
   const safeBudget = data.budget ? escapeHtml(data.budget) : "Not specified";
-  const safeSubject = data.subject
-    ? escapeHtml(data.subject)
-    : `New inquiry from ${safeName}`;
+  const subjectText = (
+    data.subject || `New inquiry from ${data.name}`
+  ).replace(/[\r\n]+/g, " ").trim();
+  const safeSubject = escapeHtml(subjectText);
   const safeMessage = escapeHtml(data.message).replace(/\n/g, "<br/>");
 
   const attachmentsList =
@@ -246,7 +246,7 @@ ${data.message}
 Reply-To: ${data.email}
   `.trim();
 
-  return { html, text, subject: safeSubject };
+  return { html, text, subject: subjectText };
 }
 
 /**

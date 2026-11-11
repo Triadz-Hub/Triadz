@@ -1,0 +1,80 @@
+name: Build and deploy Triadz to GoDaddy Node.js Hosting
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: triadz-godaddy-production
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build and deploy
+    runs-on: ubuntu-latest
+    env:
+      GODADDY_PAT: ${{ secrets.GODADDY_PAT }}
+      GODADDY_APP_ID: ${{ secrets.GODADDY_APP_ID }}
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Next.js application
+        run: npm run build
+
+      - name: Package source for GoDaddy Node.js Hosting
+        shell: bash
+        run: |
+          set -euo pipefail
+          PACKAGE_DIR="$RUNNER_TEMP/godaddy-package"
+          mkdir -p "$PACKAGE_DIR"
+
+          while IFS= read -r -d '' file; do
+            case "$file" in
+              .github/*|node_modules/*|.next/*|out/*|coverage/*|.env|.env.*)
+                continue
+                ;;
+            esac
+
+            mkdir -p "$PACKAGE_DIR/$(dirname "$file")"
+            cp "$file" "$PACKAGE_DIR/$file"
+          done < <(git ls-files -z)
+
+          test -f "$PACKAGE_DIR/package.json"
+          test -f "$PACKAGE_DIR/package-lock.json"
+          (cd "$PACKAGE_DIR" && zip -qr "$RUNNER_TEMP/triadz-source.zip" .)
+          test -s "$RUNNER_TEMP/triadz-source.zip"
+
+      - name: Upload source ZIP artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: triadz-godaddy-source
+          path: ${{ runner.temp }}/triadz-source.zip
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Import source and publish GoDaddy app
+        if: ${{ env.GODADDY_PAT != '' && env.GODADDY_APP_ID != '' && github.event_name != 'pull_request' }}
+        env:
+          GODADDY_SOURCE_ZIP: ${{ runner.temp }}/triadz-source.zip
+        run: node .github/scripts/deploy-to-godaddy.mjs
+
+      - name: Explain skipped production deployment
+        if: ${{ env.GODADDY_PAT == '' || env.GODADDY_APP_ID == '' }}
+        run: |
+          echo "::notice::The production build and source package passed. Automatic GoDaddy publishing is not enabled yet. Add GODADDY_PAT and GODADDY_APP_ID to repository Actions secrets after creating the GoDaddy Node.js app."

@@ -135,6 +135,7 @@ export default function ContactForm() {
             name="name"
             type="text"
             required
+            maxLength={100}
             placeholder="John Doe"
             disabled={isPending}
             className={`w-full bg-background border px-4 py-3 rounded-lg text-foreground placeholder:text-placeholder focus:outline-none transition-all ${
@@ -157,6 +158,7 @@ export default function ContactForm() {
             name="email"
             type="email"
             required
+            maxLength={254}
             placeholder="john@example.com"
             disabled={isPending}
             className={`w-full bg-background border px-4 py-3 rounded-lg text-foreground placeholder:text-placeholder focus:outline-none transition-all ${
@@ -182,6 +184,7 @@ export default function ContactForm() {
             id="phone"
             name="phone"
             type="tel"
+            maxLength={30}
             placeholder="+91 98765 43210"
             disabled={isPending}
             className={`w-full bg-background border px-4 py-3 rounded-lg text-foreground placeholder:text-placeholder focus:outline-none transition-all ${
@@ -268,10 +271,14 @@ export default function ContactForm() {
           id="subject"
           name="subject"
           type="text"
+          maxLength={150}
           placeholder="Brief description of your project or inquiry"
           disabled={isPending}
           className="w-full bg-background border border-chip focus:border-primary px-4 py-3 rounded-lg text-foreground placeholder:text-placeholder focus:outline-none transition-all"
         />
+        {state.errors?.subject && (
+          <p className="text-xs text-red mt-0.5">{state.errors.subject[0]}</p>
+        )}
       </div>
 
       {/* Project Description */}
@@ -283,6 +290,7 @@ export default function ContactForm() {
           id="message"
           name="message"
           rows={4}
+          maxLength={5000}
           required
           placeholder="Tell us about your project, timeline, deliverables, and requirements..."
           disabled={isPending}
