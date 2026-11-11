@@ -4,6 +4,7 @@ const pat = process.env.GODADDY_PAT;
 const appId = process.env.GODADDY_APP_ID;
 const archivePath = process.env.GODADDY_SOURCE_ZIP || "godaddy-source.zip";
 const apiBase = "https://api.godaddy.com/v1/hosting";
+const commitSha = process.env.GITHUB_SHA || "manual-deploy";
 const maxWaitMs = 5 * 60 * 1000;
 const pollEveryMs = 4000;
 
@@ -104,7 +105,11 @@ async function main() {
   console.log("Uploading application source to GoDaddy Preview…");
   const importResponse = await apiRequest(
     `/apps/${encodeURIComponent(appId)}/imports`,
-    { method: "POST", body: form },
+    {
+      method: "POST",
+      headers: { "Idempotency-Key": `${commitSha}-source-import` },
+      body: form,
+    },
   );
 
   const importId = findId(importResponse, ["importId", "id"]);
@@ -127,7 +132,10 @@ async function main() {
     `/apps/${encodeURIComponent(appId)}/deployments`,
     {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Idempotency-Key": `${commitSha}-publish`,
+      },
       body: JSON.stringify({}),
     },
   );
