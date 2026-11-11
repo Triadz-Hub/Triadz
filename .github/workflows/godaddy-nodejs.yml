@@ -1,0 +1,73 @@
+name: Build and deploy Triadz to GoDaddy Node.js Hosting
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: triadz-godaddy-production
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build and deploy
+    runs-on: ubuntu-latest
+    env:
+      GODADDY_PAT: ${{ secrets.GODADDY_PAT }}
+      GODADDY_APP_ID: ${{ secrets.GODADDY_APP_ID }}
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Next.js application
+        run: npm run build
+
+      - name: Package source for GoDaddy Node.js Hosting
+        run: |
+          zip -r "$RUNNER_TEMP/triadz-source.zip" . \
+            -x "./.git/*" \
+               "./.github/*" \
+               "./node_modules/*" \
+               "./.next/*" \
+               "./out/*" \
+               "./coverage/*" \
+               "./.env" \
+               "./.env.*" \
+               "./godaddy-source.zip"
+          test -f package.json
+          test -f package-lock.json
+          unzip -l "$RUNNER_TEMP/triadz-source.zip" | grep -q "package.json"
+
+      - name: Upload source ZIP artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: triadz-godaddy-source
+          path: ${{ runner.temp }}/triadz-source.zip
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Import source and publish GoDaddy app
+        if: ${{ env.GODADDY_PAT != '' && env.GODADDY_APP_ID != '' && github.event_name != 'pull_request' }}
+        env:
+          GODADDY_SOURCE_ZIP: ${{ runner.temp }}/triadz-source.zip
+        run: node .github/scripts/deploy-to-godaddy.mjs
+
+      - name: Explain skipped production deployment
+        if: ${{ env.GODADDY_PAT == '' || env.GODADDY_APP_ID == '' }}
+        run: |
+          echo "::notice::The Next.js build passed. Automatic GoDaddy publishing is not enabled yet. Add GODADDY_PAT and GODADDY_APP_ID to repository Actions secrets after creating the GoDaddy Node.js app."
