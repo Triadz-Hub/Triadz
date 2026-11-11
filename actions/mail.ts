@@ -227,16 +227,26 @@ async function processAndSendEmail(
     const errorMessage =
       error instanceof Error ? error.message : "An unexpected error occurred.";
 
-    // If SMTP is not yet configured, provide a helpful note
+    // If SMTP credentials are not yet configured, provide a helpful note
+    if (!process.env.SMTP_USER || !process.env.SMTP_PASSWORD) {
+      return {
+        success: false,
+        message:
+          "Email configuration is missing on the server. Please configure SMTP_USER (triadzsolutions@gmail.com) and SMTP_PASSWORD in .env.local.",
+      };
+    }
+
+    // Gmail authentication error (usually regular password used instead of 16-character Google App Password)
     if (
-      !process.env.SMTP_HOST ||
-      !process.env.SMTP_USER ||
-      !process.env.SMTP_PASSWORD
+      errorMessage.includes("Username and Password not accepted") ||
+      errorMessage.includes("535-5.7.8") ||
+      errorMessage.includes("BadCredentials") ||
+      errorMessage.includes("InvalidSecondFactorResponse")
     ) {
       return {
         success: false,
         message:
-          "SMTP email configuration is missing on the server. Please configure SMTP_HOST, SMTP_USER, and SMTP_PASSWORD in .env.local.",
+          "Gmail authentication failed. For triadzsolutions@gmail.com, you must use a 16-character Google App Password (not your regular Gmail password). Generate one at https://myaccount.google.com/apppasswords.",
       };
     }
 
@@ -244,15 +254,7 @@ async function processAndSendEmail(
       return {
         success: false,
         message:
-          "Email server connection was blocked by local socket permissions (EACCES). Please ensure port 587 (STARTTLS) is configured in your production environment variables (SMTP_PORT=587, SMTP_SECURE=false).",
-      };
-    }
-
-    if (errorMessage.toLowerCase().includes("restricted")) {
-      return {
-        success: false,
-        message:
-          "The email account has been temporarily restricted by GoDaddy security. Please log into your GoDaddy dashboard (Email & Office) to unrestrict the mailbox.",
+          "Email server connection was blocked by local socket permissions (EACCES). Please ensure port 587 (SMTP_PORT=587, SMTP_SECURE=false) is configured.",
       };
     }
 

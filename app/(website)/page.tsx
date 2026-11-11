@@ -63,7 +63,11 @@ export default function HomePage() {
   return (
     <>
       {/* Hero Section */}
-      <div className="flex-1 bg-[url('/home-bg.png')] bg-cover bg-center bg-no-repeat overflow-hidden">
+      <div className="relative isolate overflow-hidden">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_50%_0%,rgba(255,181,0,0.13)_0%,transparent_48%),radial-gradient(ellipse_at_0%_75%,rgba(0,197,255,0.045)_0%,transparent_40%),radial-gradient(ellipse_at_100%_100%,rgba(255,181,0,0.035)_0%,transparent_35%)]"
+        />
         <div className="px-4 sm:px-6 md:px-10 lg:px-16 xl:px-24 max-w-7xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-8 pt-28 sm:pt-36 lg:pt-40 pb-16 sm:pb-24 lg:pb-28 items-center">
             {/* Hero Content Left */}

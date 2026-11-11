@@ -16,19 +16,30 @@ export function escapeHtml(str: string): string {
 
 /**
  * Get or create the Nodemailer transport instance.
- * Defaults to port 587 (STARTTLS) which provides universal firewall & host compatibility,
- * avoiding the socket EACCES restrictions often encountered on port 465.
+ * Supports Gmail (triadzsolutions@gmail.com) via service or smtp.gmail.com,
+ * as well as custom SMTP hosts.
  */
 export function getMailTransporter(customPort?: number, customSecure?: boolean) {
-  const host = process.env.SMTP_HOST;
+  const host = process.env.SMTP_HOST || "smtp.gmail.com";
+  const user = process.env.SMTP_USER || "triadzsolutions@gmail.com";
+  const pass = process.env.SMTP_PASSWORD || process.env.SMTP_PASS;
+
+  const isGmail =
+    process.env.SMTP_SERVICE === "gmail" ||
+    host.includes("gmail") ||
+    user?.endsWith("@gmail.com");
+
+  // For Gmail, port 587 (STARTTLS) or 465 (SSL) can be used.
+  // Port 587 is the universal default to avoid host socket EACCES restrictions on port 465.
   const port =
     customPort !== undefined
       ? customPort
       : process.env.SMTP_PORT
         ? Number(process.env.SMTP_PORT)
-        : 587;
-  const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASSWORD || process.env.SMTP_PASS;
+        : isGmail
+          ? 587
+          : 587;
+
   const secure =
     customSecure !== undefined
       ? customSecure
@@ -36,10 +47,24 @@ export function getMailTransporter(customPort?: number, customSecure?: boolean) 
         ? process.env.SMTP_SECURE === "true"
         : port === 465;
 
-  if (!host || !user || !pass) {
+  if (!user || !pass) {
     console.warn(
-      "[Nodemailer] Warning: SMTP configuration is incomplete. Please set SMTP_HOST, SMTP_USER, and SMTP_PASSWORD in .env.local",
+      "[Nodemailer] Warning: SMTP configuration is incomplete. Please set SMTP_USER and SMTP_PASSWORD in .env.local",
     );
+  }
+
+  // If explicitly configured with service: "gmail"
+  if (process.env.SMTP_SERVICE === "gmail") {
+    return nodemailer.createTransport({
+      service: "gmail",
+      auth:
+        user && pass
+          ? {
+              user,
+              pass,
+            }
+          : undefined,
+    });
   }
 
   return nodemailer.createTransport({
@@ -56,6 +81,9 @@ export function getMailTransporter(customPort?: number, customSecure?: boolean) 
     tls: {
       rejectUnauthorized: false,
     },
+    connectionTimeout: 15000,
+    greetingTimeout: 15000,
+    socketTimeout: 20000,
   });
 }
 
@@ -75,11 +103,12 @@ export interface MailOptions {
 export async function sendMail(options: MailOptions) {
   const defaultFrom =
     process.env.SMTP_FROM ||
-    `"Triadz Solutions" <${process.env.SMTP_USER || CONTACT_DETAILS.mailId}>`;
+    `"Triadz Solutions" <${process.env.SMTP_USER || "triadzsolutions@gmail.com"}>`;
   const defaultTo =
     process.env.CONTACT_RECEIVER_EMAIL ||
+    process.env.SMTP_USER ||
     CONTACT_DETAILS.mailId ||
-    process.env.SMTP_USER;
+    "triadzsolutions@gmail.com";
 
   const mailPayload: SendMailOptions = {
     from: options.from || defaultFrom,
@@ -108,7 +137,7 @@ export async function sendMail(options: MailOptions) {
     // If initial send failed on port 465 with socket permission/connection error, retry with port 587
     if (configuredPort !== 587 && isSocketError) {
       console.warn(
-        `[Nodemailer] Socket connection error on port ${configuredPort} (${error.code || error.message}). Falling back to port 587 (STARTTLS)...`
+        `[Nodemailer] Socket connection error on port ${configuredPort} (${error.code || error.message}). Falling back to port 587 (STARTTLS)...`,
       );
       const fallbackTransporter = getMailTransporter(587, false);
       return await fallbackTransporter.sendMail(mailPayload);

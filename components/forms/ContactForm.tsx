@@ -1,7 +1,6 @@
 "use client";
 
-import { useActionState, useRef, useState } from "react";
-import { sendContactEmailAction } from "@/actions/mail";
+import { useRef, useState } from "react";
 import { BudgetRange, MailActionResult } from "@/lib/types";
 
 const BUDGET_OPTIONS: BudgetRange[] = [
@@ -19,29 +18,16 @@ const initialState: MailActionResult = {
 };
 
 export default function ContactForm() {
-  const [state, formAction, isPending] = useActionState(
-    sendContactEmailAction,
-    initialState,
-  );
+  const [state, setState] = useState<MailActionResult>(initialState);
+  const [isPending, setIsPending] = useState<boolean>(false);
 
   const [selectedBudget, setSelectedBudget] = useState<string>("Let's discuss");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState<boolean>(false);
-  const [prevSuccess, setPrevSuccess] = useState<boolean>(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
-
-  // Reset form inputs upon successful submission
-  if (state.success && !prevSuccess) {
-    setPrevSuccess(true);
-    setSelectedFile(null);
-    setFileError(null);
-    setSelectedBudget("Let's discuss");
-  } else if (!state.success && prevSuccess) {
-    setPrevSuccess(false);
-  }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -85,11 +71,43 @@ export default function ContactForm() {
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsPending(true);
+    setState({ success: false, message: "" });
+
+    try {
+      const formData = new FormData(e.currentTarget);
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data: MailActionResult = await res.json();
+      setState(data);
+
+      if (data.success) {
+        setSelectedFile(null);
+        setFileError(null);
+        setSelectedBudget("Let's discuss");
+        formRef.current?.reset();
+      }
+    } catch (err) {
+      console.error("[ContactForm] Submit error:", err);
+      setState({
+        success: false,
+        message:
+          "Failed to send inquiry. Please try again or reach out directly on WhatsApp.",
+      });
+    } finally {
+      setIsPending(false);
+    }
+  };
+
   return (
     <form
       ref={formRef}
-      key={prevSuccess ? "submitted" : "form"}
-      action={formAction}
+      onSubmit={handleSubmit}
       className="bg-card border border-chip/60 p-6 md:p-8 rounded-2xl flex flex-col gap-5 shadow-xl w-full"
     >
       {/* Status banner */}
