@@ -32,7 +32,7 @@ Fill in the Gmail app password in `.env.local` before testing email delivery. Ne
    - `SMTP_SECURE=false`
    - `SMTP_USER=triadzsolutions@gmail.com`
    - `SMTP_PASSWORD=<Google App Password>`
-   - `SMTP_FROM="Triadz Solutions <triadzsolutions@gmail.com>"`
+   - `SMTP_FROM=Triadz Solutions <triadzsolutions@gmail.com>`
    - `CONTACT_RECEIVER_EMAIL=sales@triadz.in`
 5. Create GitHub Actions repository secrets `GODADDY_PAT` and `GODADDY_APP_ID` to enable automatic source import and publish from the workflow. The GoDaddy Personal Access Token needs `hosting.source:write` and `hosting.deployment:execute` scopes.
 6. The GoDaddy workflow runs a production build on every push to `main`. When the two GoDaddy secrets are set, it uploads the app source and publishes the connected GoDaddy app.
