@@ -19,7 +19,10 @@ export function escapeHtml(str: string): string {
  * Supports Gmail (triadzsolutions@gmail.com) via service or smtp.gmail.com,
  * as well as custom SMTP hosts.
  */
-export function getMailTransporter(customPort?: number, customSecure?: boolean) {
+export function getMailTransporter(
+  customPort?: number,
+  customSecure?: boolean,
+) {
   const host = process.env.SMTP_HOST || "smtp.gmail.com";
   const user = process.env.SMTP_USER || "triadzsolutions@gmail.com";
   const pass = process.env.SMTP_PASSWORD || process.env.SMTP_PASS;
@@ -53,20 +56,6 @@ export function getMailTransporter(customPort?: number, customSecure?: boolean) 
     );
   }
 
-  // If explicitly configured with service: "gmail"
-  if (process.env.SMTP_SERVICE === "gmail") {
-    return nodemailer.createTransport({
-      service: "gmail",
-      auth:
-        user && pass
-          ? {
-              user,
-              pass,
-            }
-          : undefined,
-    });
-  }
-
   return nodemailer.createTransport({
     host,
     port,
@@ -78,12 +67,6 @@ export function getMailTransporter(customPort?: number, customSecure?: boolean) 
             pass,
           }
         : undefined,
-    tls: {
-      rejectUnauthorized: false,
-    },
-    connectionTimeout: 15000,
-    greetingTimeout: 15000,
-    socketTimeout: 20000,
   });
 }
 
